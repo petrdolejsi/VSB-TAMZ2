@@ -1,0 +1,14 @@
+<application>
+  <component name="SvnApplicationSettings">
+    <option name="myCheckoutURLs">
+      <list>
+        <option value="https://github.com/petrdolejsi/TAMZ2.git" />
+      </list>
+    </option>
+    <option name="myTypedURLs">
+      <list>
+        <option value="https://github.com/petrdolejsi/TAMZ2.git" />
+      </list>
+    </option>
+  </component>
+</application>
