@@ -1,7 +1,10 @@
 package cz.dolejsi.petr.weather;
 
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.app.Service;
+import android.graphics.Typeface;
+import android.location.LocationManager;
+import android.os.Build;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -10,6 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -17,6 +21,12 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.TextView;
+import android.widget.Toast;
+
+import org.json.JSONObject;
+
+import java.text.DateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,13 +45,22 @@ public class MainActivity extends AppCompatActivity {
      */
     private ViewPager mViewPager;
 
-    @Override
+    public static LocationManager locationManager;
+    public static boolean isGPS = false;
+    public static boolean isNetwork = false;
+
+    static DBHelperCities  mydbCities;
+
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        mydbCities = new DBHelperCities(this);
+
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -50,15 +69,18 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        /*FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
 
+        locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
+        isGPS = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        isNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
     }
 
 
@@ -94,7 +116,18 @@ public class MainActivity extends AppCompatActivity {
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
 
+        Typeface weatherFont;
+
+        TextView cityField;
+        TextView updatedField;
+        TextView detailsField;
+        TextView currentTemperatureField;
+        TextView weatherIcon;
+
+        Handler handler;
+
         public PlaceholderFragment() {
+            handler = new Handler();
         }
 
         /**
@@ -109,12 +142,168 @@ public class MainActivity extends AppCompatActivity {
             return fragment;
         }
 
+        private void updateWeatherData(final String city){
+            new Thread(){
+                public void run(){
+                    final JSONObject json = OpenWeatherMap.getJSON(getActivity(), city);
+                    if(json == null){
+                        handler.post(new Runnable(){
+                            public void run(){
+                                Toast.makeText(getActivity(),
+                                        getActivity().getString(R.string.place_not_found),
+                                        Toast.LENGTH_LONG).show();
+                            }
+                        });
+                    } else {
+                        handler.post(new Runnable(){
+                            public void run(){
+                                renderWeather(json);
+                            }
+                        });
+                    }
+                }
+            }.start();
+        }
+
+        private void renderWeather(JSONObject json){
+            try {
+                cityField.setText(json.getString("name").toUpperCase() +
+                        ", " +
+                        json.getJSONObject("sys").getString("country"));
+
+                JSONObject details = json.getJSONArray("weather").getJSONObject(0);
+                JSONObject main = json.getJSONObject("main");
+                detailsField.setText(
+                        details.getString("description").toUpperCase() +
+                                "\n" + "Vlhkost: " + main.getString("humidity") + "%" +
+                                "\n" + "Tlak: " + main.getString("pressure") + " hPa");
+
+                currentTemperatureField.setText(
+                        String.format("%.1f", main.getDouble("temp"))+ " ℃");
+
+                DateFormat df = DateFormat.getDateTimeInstance();
+                String updatedOn = df.format(new Date());
+                updatedField.setText("Aktualizováno: " + updatedOn);
+
+                setWeatherIcon(details.getInt("id"),
+                        json.getJSONObject("sys").getLong("sunrise") * 1000,
+                        json.getJSONObject("sys").getLong("sunset") * 1000);
+
+                int count = mydbCities.getCount();
+                if (count==0) {
+                    City city = new City();
+                    city.id = 1;
+                    city.lat = json.getJSONObject("coord").getString("lon");
+                    city.lot = json.getJSONObject("coord").getString("lat");
+                    city.type = 1;
+                    city.temperature = String.format("%.1f", main.getDouble("temp"));
+                    city.name = json.getString("name").toUpperCase() + ", " + json.getJSONObject("sys").getString("country");
+                    city.date = updatedOn;
+                    city.weather = details.getString("description").toUpperCase();
+                    city.humidity = main.getString("humidity");
+                    city.pressure = main.getString("pressure");
+                    mydbCities.insertCity(city);
+                }
+
+            } catch(Exception e){
+                Log.e("error", e.toString());
+                Log.e("SimpleWeather", "One or more fields not found in the JSON data");
+            }
+        }
+
+        private void setWeatherIcon(int actualId, long sunrise, long sunset){
+            int id = actualId / 100;
+            String icon = "";
+            Toolbar toolbar = ((Toolbar) this.getActivity().findViewById(R.id.toolbar));
+            if(actualId == 800){
+                long currentTime = new Date().getTime();
+                if(currentTime>=sunrise && currentTime<sunset) {
+                    icon = getActivity().getString(R.string.weather_sunny);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        toolbar.setBackgroundColor(getResources().getColor(R.color.colorSunny));
+                        toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
+                    }
+                } else {
+                    icon = getActivity().getString(R.string.weather_clear_night);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        toolbar.setBackgroundColor(getResources().getColor(R.color.colorClearNight));
+                        toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
+                    }
+                }
+            } else {
+                switch(id) {
+                    case 2:
+                        icon = getActivity().getString(R.string.weather_thunder);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorThunder));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
+                        }
+                        break;
+                    case 3:
+                        icon = getActivity().getString(R.string.weather_drizzle);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorDrizzle));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
+                        }
+                        break;
+                    case 7:
+                        icon = getActivity().getString(R.string.weather_foggy);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorFoggy));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
+                        }
+                        break;
+                    case 8 :
+                        icon = getActivity().getString(R.string.weather_cloudy);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorSunny));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
+                        }
+                        break;
+                    case 6 :
+                        icon = getActivity().getString(R.string.weather_snowy);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorSnowy));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
+                        }
+                        break;
+                    case 5 :
+                        icon = getActivity().getString(R.string.weather_rainy);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorRainy));
+                            toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
+                        }
+                        break;
+                }
+            }
+            weatherIcon.setText(icon);
+        }
+
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
+            TextView TypeText = (TextView) rootView.findViewById(R.id.typ);
+            int cislo = getArguments().getInt(ARG_SECTION_NUMBER);
+            String cisloString = getString(R.string.section_format,cislo);
+            Toolbar toolbar = ((Toolbar) this.getActivity().findViewById(R.id.toolbar));
+            if (cislo==1) {
+                TypeText.setText("Aktuální poloha");
+                weatherFont = Typeface.createFromAsset(getActivity().getAssets(), "fonts/weathericons-regular-webfont.ttf");
+                updateWeatherData(new GetPosition(getActivity()).getCity());
+
+
+                cityField = (TextView)rootView.findViewById(R.id.city_field);
+                updatedField = (TextView)rootView.findViewById(R.id.updated_field);
+                detailsField = (TextView)rootView.findViewById(R.id.details_field);
+                currentTemperatureField = (TextView)rootView.findViewById(R.id.current_temperature_field);
+                weatherIcon = (TextView)rootView.findViewById(R.id.weather_icon);
+
+                weatherIcon.setTypeface(weatherFont);
+                return rootView;
+            } else{
+                TypeText.setText(cisloString);
+            }
             return rootView;
         }
     }
@@ -124,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
      * one of the sections/tabs/pages.
      */
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
+
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -139,7 +329,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 3;
+            int count = mydbCities.getCount();
+            if (count==0) {
+                return 1;
+            }
+            return count;
         }
     }
 }
