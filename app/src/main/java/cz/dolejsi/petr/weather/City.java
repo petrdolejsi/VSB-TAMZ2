@@ -15,6 +15,9 @@ public class City {
     public String name;
     public String date;
     public String weather;
+    public int icon;
     public String humidity;
     public String pressure;
+    public long sunrise;
+    public long sunset;
 }

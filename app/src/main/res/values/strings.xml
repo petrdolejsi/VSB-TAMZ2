@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Počasí do TAMZ2</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">Nastavení</string>
     <string name="section_format">%1$d</string>
 
     <string name="open_weather_maps_app_id">8bf7893fe41541dc38f3abd57fc1de32</string>
@@ -15,5 +15,5 @@
     <string name="weather_thunder">&#xf01e;</string>
     <string name="weather_drizzle">&#xf01c;</string>
 
-    <string name="place_not_found">Sorry, no weather data found.</string>
+    <string name="place_not_found">Vyskytla se chyba</string>
 </resources>

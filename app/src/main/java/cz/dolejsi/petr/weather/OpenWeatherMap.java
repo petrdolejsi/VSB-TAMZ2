@@ -15,12 +15,22 @@ import android.util.Log;
  */
 
 public class OpenWeatherMap {
-    private static final String OPEN_WEATHER_MAP_API =
+    private static final String OPEN_WEATHER_MAP_API_WEATHER =
             "http://api.openweathermap.org/data/2.5/weather?%s&units=metric&lang=cz";
 
-    public static JSONObject getJSON(Context context, String city){
+    private static final String OPEN_WEATHER_MAP_API_FORECAST =
+            "http://api.openweathermap.org/data/2.5/forecast?%s&units=metric&lang=cz";
+
+    public static JSONObject getJSON(Context context, String city, String type){
         try {
-            URL url = new URL(String.format(OPEN_WEATHER_MAP_API, city));
+
+
+            URL url;
+            if (type=="weather") {
+                url = new URL(String.format(OPEN_WEATHER_MAP_API_WEATHER, city));
+            } else {
+                url = new URL(String.format(OPEN_WEATHER_MAP_API_FORECAST, city));
+            }
 
             Log.e("url", url.toString());
             HttpURLConnection connection =

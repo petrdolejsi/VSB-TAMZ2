@@ -40,9 +40,9 @@
         android:layout_below="@+id/city_field"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="8dp"
+        android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceMedium"
         android:textSize="13sp"
-        android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="@+id/city_field"
         app:layout_constraintStart_toStartOf="@+id/city_field"
         app:layout_constraintTop_toBottomOf="@+id/city_field" />
@@ -55,9 +55,9 @@
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         android:layout_toEndOf="@+id/details_field"
+        android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="40sp"
-        android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="@+id/weather_icon"
         app:layout_constraintStart_toStartOf="@+id/weather_icon"
         app:layout_constraintTop_toBottomOf="@+id/weather_icon" />
@@ -83,11 +83,17 @@
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
         android:layout_marginTop="48dp"
+        android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textSize="70sp"
-        android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/updated_field" />
+
+    <ListView
+        android:layout_width="345dp"
+        android:layout_height="153dp"
+        tools:layout_editor_absoluteX="33dp"
+        tools:layout_editor_absoluteY="507dp" />
 
 </android.support.constraint.ConstraintLayout>
