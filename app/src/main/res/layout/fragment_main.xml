@@ -3,13 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     tools:context="cz.dolejsi.petr.weather.MainActivity$PlaceholderFragment">
 
     <TextView
         android:id="@+id/typ"
         android:layout_width="202dp"
-        android:layout_height="23dp"
+        android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textAlignment="center"
         app:layout_constraintEnd_toEndOf="parent"
@@ -29,7 +29,6 @@
         android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceMedium"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.525"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/current_temperature_field" />
 
@@ -92,8 +91,11 @@
 
     <ListView
         android:layout_width="345dp"
-        android:layout_height="153dp"
-        tools:layout_editor_absoluteX="33dp"
-        tools:layout_editor_absoluteY="507dp" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:layout_constraintEnd_toEndOf="@+id/details_field"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="@+id/details_field"
+        app:layout_constraintTop_toBottomOf="@+id/details_field" />
 
 </android.support.constraint.ConstraintLayout>

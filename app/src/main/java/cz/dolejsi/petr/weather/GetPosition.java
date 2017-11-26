@@ -25,8 +25,8 @@ public class GetPosition extends MainActivity implements LocationListener {
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
     private static final long MIN_TIME_BW_UPDATES = 1000 * 60 * 1;
 
-    public GetPosition(Activity activity){
-        prefs = activity.getPreferences(Activity.MODE_PRIVATE);
+    public GetPosition(){
+        //prefs = activity.getPreferences(Activity.MODE_PRIVATE);
     }
 
     // If the user has not chosen a city yet, return
@@ -34,18 +34,18 @@ public class GetPosition extends MainActivity implements LocationListener {
     String getCity(){
         getLocation();
         //  lat=35&lon=139
-        return "lat=" + prefs.getString("lat","1") + "&lon="  + prefs.getString("lon","1");
+        return "lat=" + String.valueOf(loc.getLatitude()) + "&lon="  + String.valueOf(loc.getLongitude());
     }
 
-    void setCity(Location location){
-        prefs.edit().putString("lat", String.valueOf(location.getLatitude())).commit();
-        prefs.edit().putString("lon", String.valueOf(location.getLongitude())).commit();
+    public Location getLoc () {
+        getLocation();
+        return loc;
     }
 
     @Override
     public void onLocationChanged(Location location) {
         Log.d("GPS", "onLocationChanged");
-        setCity(location);
+        loc=location;
     }
 
     @Override
@@ -80,8 +80,6 @@ public class GetPosition extends MainActivity implements LocationListener {
 
                     if (locationManager != null) {
                         loc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                        if (loc != null)
-                            setCity(loc);
                     }
                 } else if (isNetwork) {
                     // from Network Provider
@@ -93,14 +91,11 @@ public class GetPosition extends MainActivity implements LocationListener {
 
                     if (locationManager != null) {
                         loc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-                        if (loc != null)
-                            setCity(loc);
                     }
                 } else {
                     Log.d("GPS", "Set default location");
                     loc.setLatitude(0.0);
                     loc.setLongitude(0.0);
-                    setCity(loc);
                 }
             } else {
                 Log.d("GPS", "Can't get location");

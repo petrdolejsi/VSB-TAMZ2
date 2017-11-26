@@ -1,6 +1,7 @@
 package cz.dolejsi.petr.weather;
 
 import android.app.Service;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
@@ -28,6 +29,7 @@ import android.widget.Toast;
 import org.json.JSONObject;
 
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
@@ -104,6 +106,12 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             return true;
         }
+
+        if (id == R.id.action_cities) {
+            Intent intent = new Intent(getApplicationContext(), CitiesActivity.class);
+            startActivity(intent);
+        }
+
 
         return super.onOptionsItemSelected(item);
     }
@@ -189,6 +197,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void renderWeather(JSONObject json){
+            int cislo = getArguments().getInt(ARG_SECTION_NUMBER);
+
             try {
                 try {
                     cityField.setText(json.getString("name").toUpperCase() +
@@ -217,39 +227,53 @@ public class MainActivity extends AppCompatActivity {
                         json.getJSONObject("sys").getLong("sunrise") * 1000,
                         json.getJSONObject("sys").getLong("sunset") * 1000);
 
-                if (!(mydbCities.IfCityExist(1))) {
+                City city = new City();
+                city.id = 1;
+                city.lat = json.getJSONObject("coord").getString("lon");
+                city.lot = json.getJSONObject("coord").getString("lat");
+                city.type = 1;
+                city.temperature = String.format("%.1f", main.getDouble("temp"));
+                try {
+                    city.name = json.getString("name").toUpperCase() + ", " + json.getJSONObject("sys").getString("country");
+                } catch(Exception e) {
+                    city.name = "";
+                }
+                city.date = updatedOn;
+                city.icon = details.getInt("id");
+                city.weather = details.getString("description").toUpperCase();
+                city.humidity = main.getString("humidity");
+                city.pressure = main.getString("pressure");
+                city.sunrise = json.getJSONObject("sys").getLong("sunrise") * 1000;
+                city.sunset = json.getJSONObject("sys").getLong("sunset") * 1000;
+
+                if (!(mydbCities.IfCityExist(cislo))) {
                     Log.e("city","neexistuje");
-                    City city = new City();
-                    city.id = 1;
-                    city.lat = json.getJSONObject("coord").getString("lon");
-                    city.lot = json.getJSONObject("coord").getString("lat");
-                    city.type = 1;
-                    city.temperature = String.format("%.1f", main.getDouble("temp"));
-                    try {
-                        city.name = json.getString("name").toUpperCase() + ", " + json.getJSONObject("sys").getString("country");
-                    } catch(Exception e) {
-                        city.name = "";
-                    }
-                    city.date = updatedOn;
-                    city.icon = details.getInt("id");
-                    city.weather = details.getString("description").toUpperCase();
-                    city.humidity = main.getString("humidity");
-                    city.pressure = main.getString("pressure");
-                    city.sunrise = json.getJSONObject("sys").getLong("sunrise") * 1000;
-                    city.sunset = json.getJSONObject("sys").getLong("sunset") * 1000;
                     if (mydbCities.insertCity(city)) {
-                        Log.e("city","vloženo");
+                        Log.d("city","vloženo");
                     } else {
-                        Log.e("city","nevloženo");
+                        Log.d("city","nevloženo");
                     }
-                } else {
+                } else  {
+                    Cursor cityExist = mydbCities.getData(cislo);
+                    cityExist.moveToFirst();
+                    DateFormat format = new SimpleDateFormat("d. M. yyyy H:m:s");
+                    Date date = format.parse(cityExist.getString(cityExist.getColumnIndex("date")));
+                    Date now = new Date();
+                    if (now.getTime() - date.getTime() >= 60*1000) {
+                        if (mydbCities.updateCity(city)) {
+                            Log.d("city","vloženo");
+                        } else {
+                            Log.d("city","nevloženo");
+                        }
+                    }
+                    cityExist.close();
                     Log.e("city","existuje");
                 }
 
             } catch(Exception e){
                 Log.e("error", e.toString());
                 Log.e("SimpleWeather", "One or more fields not found in the JSON data");
-                if (mydbCities.IfCityExist(1)) {
+                if (mydbCities.IfCityExist(cislo)) {
                     readAndSetDatas();
                 }
             }
@@ -334,7 +358,7 @@ public class MainActivity extends AppCompatActivity {
             if (cislo==1) {
                 TypeText.setText("Aktuální poloha");
                 weatherFont = Typeface.createFromAsset(getActivity().getAssets(), "fonts/weathericons-regular-webfont.ttf");
-                updateWeatherData(new GetPosition(getActivity()).getCity());
+                updateWeatherData(new GetPosition().getCity());
 
 
                 cityField = (TextView)rootView.findViewById(R.id.city_field);

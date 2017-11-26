@@ -16,4 +16,6 @@
     <string name="weather_drizzle">&#xf01c;</string>
 
     <string name="place_not_found">Vyskytla se chyba</string>
+
+    <string name="google_maps_key">AIzaSyCm9a9ntPaoao2KJUcFr02-FvSubUIOcp8</string>
 </resources>
