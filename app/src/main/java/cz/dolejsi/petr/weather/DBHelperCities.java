@@ -20,7 +20,7 @@ public class DBHelperCities extends SQLiteOpenHelper {
         public static final String DATABASE_NAME = "Cities.db";
         public static final String CITIES_TABLE_NAME = "cities";
 
-        public static ArrayList<City> arrayList = new ArrayList<City>();
+        public static ArrayList<String> arrayListString = new ArrayList<String>();
 
         public DBHelperCities(Context context)
         {
@@ -35,8 +35,8 @@ public class DBHelperCities extends SQLiteOpenHelper {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            db.execSQL("DROP TABLE IF EXISTS " + CITIES_TABLE_NAME );
-            onCreate(db);
+            /*db.execSQL("DROP TABLE IF EXISTS " + CITIES_TABLE_NAME );
+            onCreate(db);*/
         }
 
         public boolean insertCity(City city)
@@ -94,7 +94,7 @@ public class DBHelperCities extends SQLiteOpenHelper {
             return true;
         }
 
-        public ArrayList<City> getAllContacts()
+        public ArrayList<City> getAllCitiesAll()
         {
             ArrayList<City> cities = new ArrayList<>();
             SQLiteDatabase db = this.getReadableDatabase();
@@ -121,6 +121,24 @@ public class DBHelperCities extends SQLiteOpenHelper {
                 res.moveToNext();
             }
             return cities;
+        }
+
+        public void getAllCities()
+        {
+            arrayListString.clear();
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor res =  db.rawQuery( "select * from " + CITIES_TABLE_NAME, null );
+            res.moveToFirst();
+
+            while(res.isAfterLast() == false){
+                arrayListString.add(res.getString(res.getColumnIndex("name")));
+                res.moveToNext();
+            }
+        }
+
+        public ArrayList<String> getAllCitiesName()
+        {
+            return arrayListString;
         }
 
         public boolean IfCityExist(int id) {

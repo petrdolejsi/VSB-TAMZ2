@@ -30,6 +30,7 @@ import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
@@ -52,6 +53,10 @@ public class MainActivity extends AppCompatActivity {
     public static LocationManager locationManager;
     public static boolean isGPS = false;
     public static boolean isNetwork = false;
+
+    public static boolean doNotifyDataSetChangedOnce = false;
+
+    private static ArrayList<City> cities;
 
     private static DBHelperCities mydbCities;
 
@@ -82,11 +87,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });*/
 
+        cities = mydbCities.getAllCitiesAll();
+
         locationManager = (LocationManager) getSystemService(Service.LOCATION_SERVICE);
         isGPS = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         isNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
     }
 
+    public static void newCities() {
+        cities = mydbCities.getAllCitiesAll();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -152,17 +162,16 @@ public class MainActivity extends AppCompatActivity {
             return fragment;
         }
 
-        private void updateWeatherData(final String city){
+        private void updateWeatherData(final String city, final int number){
             new Thread(){
                 public void run(){
                     final JSONObject json = OpenWeatherMap.getJSON(getActivity(), city, "weather");
                     if(json == null){
                         handler.post(new Runnable(){
                             public void run(){
-                                Toast.makeText(getActivity(),"Offline předpověď",
-                                        Toast.LENGTH_LONG).show();
-                                if (mydbCities.IfCityExist(1)) {
-                                    readAndSetDatas();
+                                //Toast.makeText(getActivity(),"Offline předpověď", Toast.LENGTH_LONG).show();
+                                if (mydbCities.IfCityExist(number)) {
+                                    readAndSetDatas(number);
                                 } else {
                                     Log.e("mesto","neexistuje");
                                 }
@@ -172,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         handler.post(new Runnable(){
                             public void run(){
-                                renderWeather(json);
+                                renderWeather(json, number);
                             }
                         });
                     }
@@ -180,8 +189,8 @@ public class MainActivity extends AppCompatActivity {
             }.start();
         }
 
-        private void readAndSetDatas () {
-            Cursor city = mydbCities.getData(1);
+        private void readAndSetDatas (int number) {
+            Cursor city = mydbCities.getData(number);
             city.moveToFirst();
 
             cityField.setText(city.getString(city.getColumnIndex("name")));
@@ -196,85 +205,89 @@ public class MainActivity extends AppCompatActivity {
             city.close();
         }
 
-        private void renderWeather(JSONObject json){
+        private void renderWeather(JSONObject json, int number){
             int cislo = getArguments().getInt(ARG_SECTION_NUMBER);
 
             try {
+                City city = new City();
                 try {
                     cityField.setText(json.getString("name").toUpperCase() +
                             ", " +
                             json.getJSONObject("sys").getString("country"));
                 } catch(Exception e) {
                     Log.e("error", e.toString());
-                    Log.e("country", "no country");
+                    Log.e("render", "no country");
                 }
 
-                JSONObject details = json.getJSONArray("weather").getJSONObject(0);
-                JSONObject main = json.getJSONObject("main");
-                detailsField.setText(
-                        details.getString("description").toUpperCase() +
+                try {
+                    JSONObject details = json.getJSONArray("weather").getJSONObject(0);
+
+                    city.icon = details.getInt("id");
+                    city.weather = details.getString("description").toUpperCase();
+
+                    try {
+                        JSONObject main = json.getJSONObject("main");
+                        detailsField.setText(details.getString("description").toUpperCase() +
                                 "\n" + "Vlhkost: " + main.getString("humidity") + "%" +
                                 "\n" + "Tlak: " + main.getString("pressure") + " hPa");
+                        currentTemperatureField.setText(String.format("%.1f", main.getDouble("temp"))+ " ℃");
 
-                currentTemperatureField.setText(
-                        String.format("%.1f", main.getDouble("temp"))+ " ℃");
+                        city.temperature = String.format("%.1f", main.getDouble("temp"));
+                        city.humidity = main.getString("humidity");
+                        city.pressure = main.getString("pressure");
+                    } catch (Exception e) {
+                        Log.e("error", e.toString());
+                        Log.e("render", "no main");
+                    }
+
+                    setWeatherIcon(details.getInt("id"),
+                            json.getJSONObject("sys").getLong("sunrise") * 1000,
+                            json.getJSONObject("sys").getLong("sunset") * 1000);
+                } catch (Exception e) {
+                    Log.e("error", e.toString());
+                    Log.e("render", "no details");
+                }
 
                 DateFormat df = DateFormat.getDateTimeInstance();
                 String updatedOn = df.format(new Date());
                 updatedField.setText("Aktualizováno: " + updatedOn);
 
-                setWeatherIcon(details.getInt("id"),
-                        json.getJSONObject("sys").getLong("sunrise") * 1000,
-                        json.getJSONObject("sys").getLong("sunset") * 1000);
 
-                City city = new City();
-                city.id = 1;
+
+                city.id = number;
                 city.lat = json.getJSONObject("coord").getString("lon");
                 city.lot = json.getJSONObject("coord").getString("lat");
                 city.type = 1;
-                city.temperature = String.format("%.1f", main.getDouble("temp"));
                 try {
                     city.name = json.getString("name").toUpperCase() + ", " + json.getJSONObject("sys").getString("country");
                 } catch(Exception e) {
                     city.name = "";
                 }
                 city.date = updatedOn;
-                city.icon = details.getInt("id");
-                city.weather = details.getString("description").toUpperCase();
-                city.humidity = main.getString("humidity");
-                city.pressure = main.getString("pressure");
                 city.sunrise = json.getJSONObject("sys").getLong("sunrise") * 1000;
                 city.sunset = json.getJSONObject("sys").getLong("sunset") * 1000;
 
                 if (!(mydbCities.IfCityExist(cislo))) {
-                    Log.e("city","neexistuje");
+                    Log.d("city","neexistuje");
                     if (mydbCities.insertCity(city)) {
                         Log.d("city","vloženo");
                     } else {
                         Log.d("city","nevloženo");
                     }
                 } else  {
-                    Cursor cityExist = mydbCities.getData(cislo);
-                    cityExist.moveToFirst();
-                    DateFormat format = new SimpleDateFormat("d. M. yyyy H:m:s");
-                    Date date = format.parse(cityExist.getString(cityExist.getColumnIndex("date")));
-                    Date now = new Date();
-                    if (now.getTime() - date.getTime() >= 60*1000) {
-                        if (mydbCities.updateCity(city)) {
-                            Log.d("city","vloženo");
-                        } else {
-                            Log.d("city","nevloženo");
-                        }
+                    Log.d("city","existuje");
+                    if (mydbCities.updateCity(city)) {
+                        Log.d("city", "upraveno2");
+                    } else {
+                        Log.d("city", "neupraveno2");
                     }
-                    cityExist.close();
-                    Log.e("city","existuje");
                 }
 
             } catch(Exception e){
                 Log.e("error", e.toString());
                 Log.e("SimpleWeather", "One or more fields not found in the JSON data");
                 if (mydbCities.IfCityExist(cislo)) {
-                    readAndSetDatas();
+                    readAndSetDatas(number);
                 }
             }
         }
@@ -324,7 +337,7 @@ public class MainActivity extends AppCompatActivity {
                     case 8 :
                         icon = getActivity().getString(R.string.weather_cloudy);
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorSunny));
+                            toolbar.setBackgroundColor(getResources().getColor(R.color.colorCloudy));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                         }
                         break;
@@ -342,6 +355,10 @@ public class MainActivity extends AppCompatActivity {
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                         }
                         break;
+                    default:
+                        toolbar.setBackgroundColor(getResources().getColor(R.color.colorPrimary));
+                        toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
+                        break;
                 }
             }
             weatherIcon.setText(icon);
@@ -353,25 +370,32 @@ public class MainActivity extends AppCompatActivity {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
             TextView TypeText = (TextView) rootView.findViewById(R.id.typ);
             int cislo = getArguments().getInt(ARG_SECTION_NUMBER);
-            String cisloString = getString(R.string.section_format,cislo);
             Toolbar toolbar = ((Toolbar) this.getActivity().findViewById(R.id.toolbar));
+            weatherFont = Typeface.createFromAsset(getActivity().getAssets(), "fonts/weathericons-regular-webfont.ttf");
             if (cislo==1) {
                 TypeText.setText("Aktuální poloha");
-                weatherFont = Typeface.createFromAsset(getActivity().getAssets(), "fonts/weathericons-regular-webfont.ttf");
-                updateWeatherData(new GetPosition().getCity());
+
+                updateWeatherData(new GetPosition().getCity(), cislo);
+
+            } else {
+                String cisloString = getString(R.string.section_format,cislo-1);
+                TypeText.setText("Z uložených poloh - " + cisloString);
+
+                City searchedCity = cities.get(cislo-1);
+
+                String city = "lat=" + searchedCity.lat + "&lon="  + searchedCity.lot;
+
+                updateWeatherData(city, cislo);
 
 
-                cityField = (TextView)rootView.findViewById(R.id.city_field);
-                updatedField = (TextView)rootView.findViewById(R.id.updated_field);
-                detailsField = (TextView)rootView.findViewById(R.id.details_field);
-                currentTemperatureField = (TextView)rootView.findViewById(R.id.current_temperature_field);
-                weatherIcon = (TextView)rootView.findViewById(R.id.weather_icon);
-
-                weatherIcon.setTypeface(weatherFont);
-                return rootView;
-            } else{
-                TypeText.setText(cisloString);
             }
+            cityField = (TextView)rootView.findViewById(R.id.city_field);
+            updatedField = (TextView)rootView.findViewById(R.id.updated_field);
+            detailsField = (TextView)rootView.findViewById(R.id.details_field);
+            currentTemperatureField = (TextView)rootView.findViewById(R.id.current_temperature_field);
+
+            weatherIcon = (TextView)rootView.findViewById(R.id.weather_icon);
+            weatherIcon.setTypeface(weatherFont);
             return rootView;
         }
     }
@@ -397,6 +421,12 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getCount() {
             // Show 3 total pages.
+
+            if (doNotifyDataSetChangedOnce) {
+                doNotifyDataSetChangedOnce = false;
+                notifyDataSetChanged();
+            }
+
             int count = mydbCities.getCount();
             if (count==0) {
                 return 1;
