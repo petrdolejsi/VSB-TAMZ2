@@ -76,7 +76,7 @@ public class DBHelperCities extends SQLiteOpenHelper {
 
         public boolean updateCity (City city)
         {
-            SQLiteDatabase db = this.getReadableDatabase();
+            SQLiteDatabase db = this.getWritableDatabase();
             ContentValues contentValues = new ContentValues();
             contentValues.put("lat", city.lat);
             contentValues.put("lot", city.lot);
@@ -91,6 +91,12 @@ public class DBHelperCities extends SQLiteOpenHelper {
             contentValues.put("sunrise", city.sunrise);
             contentValues.put("sunset", city.sunset);
             db.update(CITIES_TABLE_NAME,contentValues," id="+(city.id),null);
+            return true;
+        }
+
+        public boolean deleteCity(int id) {
+            SQLiteDatabase db = this.getWritableDatabase();
+            db.delete(CITIES_TABLE_NAME," id="+id,null);
             return true;
         }
 
@@ -127,7 +133,7 @@ public class DBHelperCities extends SQLiteOpenHelper {
         {
             arrayListString.clear();
             SQLiteDatabase db = this.getReadableDatabase();
-            Cursor res =  db.rawQuery( "select * from " + CITIES_TABLE_NAME, null );
+            Cursor res =  db.rawQuery( "select * from " + CITIES_TABLE_NAME + " where id > 1", null );
             res.moveToFirst();
 
             while(res.isAfterLast() == false){

@@ -8,8 +8,10 @@ import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -49,25 +51,25 @@ public class CitiesActivity extends AppCompatActivity {
 
         ArrayAdapter arrayAdapter=new ArrayAdapter(this,android.R.layout.simple_list_item_1, cities);
         ListView obj = (ListView)findViewById(R.id.CitiesList);
-        obj.setAdapter(arrayAdapter);/*
+        obj.setAdapter(arrayAdapter);
         obj.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
                 //abych vedel jake id v poli mam hledat
-                int id_To_Search = arg2+1;
+
+                City searchedCity = MainActivity.cities.get(arg2+1);
+
+                int id_To_Search = searchedCity.id;
                 Log.d("Clicked item id", " "+ arg2);
                 Bundle dataBundle = new Bundle();
                 dataBundle.putInt("id", id_To_Search);
-                Intent intent = new Intent(getApplicationContext(), DisplayContact.class);
+                Intent intent = new Intent(getApplicationContext(), DetailActivity.class);
                 intent.putExtra("id",id_To_Search);
                 startActivity(intent);
             }
         });
-        */
 
-        mName = (TextView) findViewById(R.id.textView);
-        mAddress = (TextView) findViewById(R.id.textView2);
-        mAttributions = (TextView) findViewById(R.id.textView3);
+
         Button pickerButton = (Button) findViewById(R.id.pickerButton);
         pickerButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -117,13 +119,19 @@ public class CitiesActivity extends AppCompatActivity {
             MainActivity.doNotifyDataSetChangedOnce = true;
             MainActivity.newCities();
 
-            mName.setText(name);
-            mAddress.setText(address);
-            mAttributions.setText(Html.fromHtml(attributions));
-
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
+    }
+
+    public void update() {
+        mydbCities.getAllCities();
+
+        ArrayList<String> cities = mydbCities.getAllCitiesName();
+
+        ArrayAdapter arrayAdapter=new ArrayAdapter(this,android.R.layout.simple_list_item_1, cities);
+        ListView obj = (ListView)findViewById(R.id.CitiesList);
+        obj.setAdapter(arrayAdapter);
     }
 
     public static double round(double value, int places) {

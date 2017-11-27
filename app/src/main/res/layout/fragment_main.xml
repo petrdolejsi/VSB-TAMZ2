@@ -75,7 +75,7 @@
         app:layout_constraintStart_toStartOf="@+id/typ"
         app:layout_constraintTop_toBottomOf="@+id/typ" />
 
-    <TextView
+    <ImageView
         android:id="@+id/weather_icon"
         android:layout_width="124dp"
         android:layout_height="92dp"

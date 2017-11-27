@@ -34,6 +34,10 @@ public class GetPosition extends MainActivity implements LocationListener {
     String getCity(){
         getLocation();
         //  lat=35&lon=139
+        if (loc == null) {
+            loc.setLatitude(0);
+            loc.setLongitude(0);
+        }
         return "lat=" + String.valueOf(loc.getLatitude()) + "&lon="  + String.valueOf(loc.getLongitude());
     }
 

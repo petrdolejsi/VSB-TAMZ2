@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Počasí do TAMZ2</string>
+    <string name="app_name">Počasí</string>
     <string name="action_settings">Nastavení</string>
     <string name="section_format">%1$d</string>
 

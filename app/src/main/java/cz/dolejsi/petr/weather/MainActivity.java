@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Handler;
@@ -23,6 +24,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -56,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static boolean doNotifyDataSetChangedOnce = false;
 
-    private static ArrayList<City> cities;
+    public static ArrayList<City> cities;
 
     private static DBHelperCities mydbCities;
 
@@ -142,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
         TextView updatedField;
         TextView detailsField;
         TextView currentTemperatureField;
-        TextView weatherIcon;
+        ImageView weatherIcon;
 
         Handler handler;
 
@@ -294,18 +296,18 @@ public class MainActivity extends AppCompatActivity {
 
         private void setWeatherIcon(int actualId, long sunrise, long sunset){
             int id = actualId / 100;
-            String icon = "";
+            int icon = R.drawable.sunny;
             Toolbar toolbar = ((Toolbar) this.getActivity().findViewById(R.id.toolbar));
             if(actualId == 800){
                 long currentTime = new Date().getTime();
                 if(currentTime>=sunrise && currentTime<sunset) {
-                    icon = getActivity().getString(R.string.weather_sunny);
+                    icon = R.drawable.sunny;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         toolbar.setBackgroundColor(getResources().getColor(R.color.colorSunny));
                         toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                     }
                 } else {
-                    icon = getActivity().getString(R.string.weather_clear_night);
+                    icon = R.drawable.night;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         toolbar.setBackgroundColor(getResources().getColor(R.color.colorClearNight));
                         toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
@@ -314,42 +316,43 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 switch(id) {
                     case 2:
-                        icon = getActivity().getString(R.string.weather_thunder);
+                        icon = R.drawable.thunder;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorThunder));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
                         }
                         break;
                     case 3:
-                        icon = getActivity().getString(R.string.weather_drizzle);
+                        icon = R.drawable.drizzle;
+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorDrizzle));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorWhite));
                         }
                         break;
                     case 7:
-                        icon = getActivity().getString(R.string.weather_foggy);
+                        icon = R.drawable.foggy;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorFoggy));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                         }
                         break;
                     case 8 :
-                        icon = getActivity().getString(R.string.weather_cloudy);
+                        icon = R.drawable.cloudy;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorCloudy));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                         }
                         break;
                     case 6 :
-                        icon = getActivity().getString(R.string.weather_snowy);
+                        icon = R.drawable.snowy;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorSnowy));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
                         }
                         break;
                     case 5 :
-                        icon = getActivity().getString(R.string.weather_rainy);
+                        icon = R.drawable.rainy;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             toolbar.setBackgroundColor(getResources().getColor(R.color.colorRainy));
                             toolbar.setTitleTextColor(getResources().getColor(R.color.colorBlack));
@@ -361,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                 }
             }
-            weatherIcon.setText(icon);
+            weatherIcon.setImageResource(icon);
         }
 
         @Override
@@ -371,7 +374,6 @@ public class MainActivity extends AppCompatActivity {
             TextView TypeText = (TextView) rootView.findViewById(R.id.typ);
             int cislo = getArguments().getInt(ARG_SECTION_NUMBER);
             Toolbar toolbar = ((Toolbar) this.getActivity().findViewById(R.id.toolbar));
-            weatherFont = Typeface.createFromAsset(getActivity().getAssets(), "fonts/weathericons-regular-webfont.ttf");
             if (cislo==1) {
                 TypeText.setText("Aktuální poloha");
 
@@ -394,8 +396,7 @@ public class MainActivity extends AppCompatActivity {
             detailsField = (TextView)rootView.findViewById(R.id.details_field);
             currentTemperatureField = (TextView)rootView.findViewById(R.id.current_temperature_field);
 
-            weatherIcon = (TextView)rootView.findViewById(R.id.weather_icon);
-            weatherIcon.setTypeface(weatherFont);
+            weatherIcon = (ImageView) rootView.findViewById(R.id.weather_icon);
             return rootView;
         }
     }
